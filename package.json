@@ -35,7 +35,7 @@
     "build-and-open-docs": "run-s build-docs open-docs",
     "remark": "remark -q -f .",
     "version-bump": "node scripts/version-bump.mjs",
-    "publish": "node scripts/publish.mjs",
+    "release": "node scripts/publish.mjs",
     "test-build": "run-s test build-docs build"
   },
   "repository": {
