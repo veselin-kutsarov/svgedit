@@ -16,14 +16,16 @@ import {
   transformPoint,
   transformListToTransform,
   rectsIntersect,
-  getTransformList
+  getTransformList,
+  NEAR_ZERO,
+  normalizeRotationAngle,
+  getRotationTransformSummary
 } from './math.js'
 import * as hstry from './history.js'
 import { getClosest } from '../common/util.js'
 
 const { BatchCommand, ChangeElementCommand } = hstry
 let svgCanvas = null
-const NEAR_ZERO = 1e-10
 const TRANSFORM_GEOMETRY_ATTRS = [
   'transform',
   'x', 'y', 'width', 'height',
@@ -31,26 +33,6 @@ const TRANSFORM_GEOMETRY_ATTRS = [
   'x1', 'y1', 'x2', 'y2',
   'points', 'd'
 ]
-
-const normalizeRotationValue = (angle) => {
-  let normalized = Number.parseFloat(angle)
-  if (!Number.isFinite(normalized)) return 0
-  normalized %= 360
-  if (normalized > 180) normalized -= 360
-  if (normalized <= -180) normalized += 360
-  return Math.abs(normalized) < NEAR_ZERO ? 0 : normalized
-}
-
-const getCombinedRotationAngle = (tlist) => {
-  let angle = 0
-  for (let i = 0; i < tlist.numberOfItems; i++) {
-    const transform = tlist.getItem(i)
-    if (transform.type === SVGTransform.SVG_TRANSFORM_ROTATE) {
-      angle += transform.angle
-    }
-  }
-  return normalizeRotationValue(angle)
-}
 
 const getTransformGeometryValues = (elem) => {
   const values = {}
@@ -431,7 +413,7 @@ const prepareSvg = (newDoc) => {
 const setRotationAngle = (val, preventUndo) => {
   const selectedElements = svgCanvas.getSelectedElements()
   // ensure val is the proper type
-  val = normalizeRotationValue(val)
+  val = normalizeRotationAngle(val)
   const elem = selectedElements[0]
   if (!elem) return
   const bbox = getBBox(elem)
@@ -439,7 +421,7 @@ const setRotationAngle = (val, preventUndo) => {
   const cx = bbox.x + bbox.width / 2
   const cy = bbox.y + bbox.height / 2
   const tlist = getTransformList(elem)
-  const currentAngle = getCombinedRotationAngle(tlist)
+  const { rotationAngle: currentAngle } = getRotationTransformSummary(tlist)
   if (Math.abs(val - currentAngle) < NEAR_ZERO) return
 
   const oldValues = getTransformGeometryValues(elem)

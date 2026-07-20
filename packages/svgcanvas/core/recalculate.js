@@ -21,39 +21,13 @@ import {
   transformPoint,
   transformListToTransform,
   hasMatrixTransform,
-  getTransformList
+  getTransformList,
+  NEAR_ZERO,
+  getRotationTransformSummary
 } from './math.js'
 import { mergeDeep } from '../common/util.js'
 
 let svgCanvas
-const NEAR_ZERO = 1e-10
-
-const getRotationCenterFromTransform = (xform) => {
-  if (Number.isFinite(xform.cx) && Number.isFinite(xform.cy)) {
-    return { x: xform.cx, y: xform.cy }
-  }
-
-  const angle = (xform.angle * Math.PI) / 180
-  const cos = Math.cos(angle)
-  const sin = Math.sin(angle)
-  const det = (1 - cos) * (1 - cos) + sin * sin
-
-  if (Math.abs(det) < NEAR_ZERO) {
-    return { x: 0, y: 0 }
-  }
-
-  const { e, f } = xform.matrix
-  return {
-    x: ((1 - cos) * e - sin * f) / det,
-    y: (sin * e + (1 - cos) * f) / det
-  }
-}
-
-const normalizeAngle = (angle) => {
-  while (angle > 180) angle -= 360
-  while (angle <= -180) angle += 360
-  return angle
-}
 
 const geometryLimitedElements = new Set([
   'circle',
@@ -71,24 +45,6 @@ const appendMatrixTransform = (tlist, svgroot, matrix) => {
   const transform = svgroot.createSVGTransform()
   transform.setMatrix(matrix)
   tlist.appendItem(transform)
-}
-
-const getTransformSummary = (tlist) => {
-  let rotationAngle = 0
-  let rotationCenter = null
-
-  for (let i = 0; i < tlist.numberOfItems; i++) {
-    const xform = tlist.getItem(i)
-    if (xform.type === SVGTransform.SVG_TRANSFORM_ROTATE) {
-      rotationAngle += xform.angle
-      rotationCenter ||= getRotationCenterFromTransform(xform)
-    }
-  }
-
-  return {
-    rotationAngle: normalizeAngle(rotationAngle),
-    rotationCenter
-  }
 }
 
 const getNormalizedRotationCenter = (selected, summary, totalMatrix) => {
@@ -112,7 +68,7 @@ const normalizeRetainedTransformList = (selected, tlist, svgroot) => {
   if (!tlist) return
 
   const totalMatrix = transformListToTransform(tlist).matrix
-  const summary = getTransformSummary(tlist)
+  const summary = getRotationTransformSummary(tlist)
   const { rotationAngle } = summary
   const rotationTransform = svgroot.createSVGTransform()
   let remainingMatrix = totalMatrix
@@ -140,7 +96,7 @@ const bakeTransformsIntoAttributes = (selected, changes, tlist, svgroot) => {
   if (!tlist?.numberOfItems) return false
 
   const totalMatrix = transformListToTransform(tlist).matrix
-  const summary = getTransformSummary(tlist)
+  const summary = getRotationTransformSummary(tlist)
   const { rotationAngle } = summary
   let bakeMatrix = totalMatrix
   let rotationTransform = null
@@ -307,7 +263,7 @@ export const recalculateDimensions = selected => {
     const tlist = getTransformList(selected)
     if (!tlist?.numberOfItems) return null
 
-    const summary = getTransformSummary(tlist)
+    const summary = getRotationTransformSummary(tlist)
     if (
       Math.abs(summary.rotationAngle) < NEAR_ZERO &&
       tlist.numberOfItems === 1 &&

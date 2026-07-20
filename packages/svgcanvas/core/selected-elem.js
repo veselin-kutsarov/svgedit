@@ -28,7 +28,8 @@ import {
   transformPoint,
   matrixMultiply,
   transformListToTransform,
-  getTransformList
+  getTransformList,
+  getRotationCenterFromTransform
 } from './math.js'
 import { recalculateDimensions } from './recalculate.js'
 import { isGecko } from '../common/browser.js'
@@ -43,7 +44,6 @@ const {
 } = hstry
 
 let svgCanvas = null
-const NEAR_ZERO = 1e-10
 
 /**
  * @function module:selected-elem.init
@@ -838,32 +838,11 @@ const normalizePushedGroupChild = (elem, oldTransform, batchCmd, undoable) => {
   }
 }
 
-const getTransformRotationCenter = xform => {
-  if (Number.isFinite(xform.cx) && Number.isFinite(xform.cy)) {
-    return { x: xform.cx, y: xform.cy }
-  }
-
-  const angle = xform.angle * Math.PI / 180
-  const cos = Math.cos(angle)
-  const sin = Math.sin(angle)
-  const det = (1 - cos) * (1 - cos) + sin * sin
-
-  if (Math.abs(det) < NEAR_ZERO) {
-    return { x: 0, y: 0 }
-  }
-
-  const { e, f } = xform.matrix
-  return {
-    x: ((1 - cos) * e - sin * f) / det,
-    y: (sin * e + (1 - cos) * f) / det
-  }
-}
-
 const clonePushedGroupTransform = xform => {
   const clone = svgCanvas.getSvgRoot().createSVGTransform()
 
   if (xform.type === SVGTransform.SVG_TRANSFORM_ROTATE) {
-    const { x, y } = getTransformRotationCenter(xform)
+    const { x, y } = getRotationCenterFromTransform(xform)
     clone.setRotate(xform.angle, x, y)
   } else {
     clone.setMatrix(xform.matrix)
