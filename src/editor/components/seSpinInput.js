@@ -74,10 +74,6 @@ export class SESpinInput extends HTMLElement {
     this.inputEventsConnected = false
   }
 
-  #getTextInput () {
-    return this.$input.shadowRoot?.getElementById('input')
-  }
-
   #isValidValue (value) {
     const normalized = String(value).trim()
     if (normalized === '') return false
@@ -115,21 +111,23 @@ export class SESpinInput extends HTMLElement {
   #connectInputEvents () {
     if (!this.isConnected || this.inputEventsConnected) return
 
-    const input = this.#getTextInput()
-    if (!input) {
-      setTimeout(() => this.#connectInputEvents(), 0)
-      return
-    }
+    const inputRoot = this.$input.shadowRoot
+    if (!inputRoot) return
     this.inputEventsConnected = true
 
-    input.addEventListener('focus', () => {
+    inputRoot.addEventListener('focus', (e) => {
+      const input = e.target
+      if (input?.id !== 'input') return
       this.committedValue = String(this.value)
       input.select()
-    })
-    input.addEventListener('input', () => {
+    }, true)
+    inputRoot.addEventListener('input', (e) => {
+      if (e.target?.id !== 'input') return
       this.manualEdit = true
     })
-    input.addEventListener('keydown', (e) => {
+    inputRoot.addEventListener('keydown', (e) => {
+      const input = e.target
+      if (input?.id !== 'input') return
       if (e.key === 'Enter') {
         e.preventDefault()
         this.#commitValue(input.value)
@@ -140,13 +138,15 @@ export class SESpinInput extends HTMLElement {
         this.manualEdit = false
       }
     })
-    input.addEventListener('blur', () => {
+    inputRoot.addEventListener('blur', (e) => {
+      const input = e.target
+      if (input?.id !== 'input') return
       if (this.manualEdit) {
         this.#commitValue(input.value)
       }
-    })
+    }, true)
 
-    this.$input.shadowRoot.addEventListener('mousedown', (e) => {
+    inputRoot.addEventListener('mousedown', (e) => {
       if (e.target?.id === 'upButton' || e.target?.id === 'downButton') {
         this.manualEdit = false
       }
@@ -311,7 +311,9 @@ export class SESpinInput extends HTMLElement {
    * @returns {void}
    */
   connectedCallback () {
-    this.#connectInputEvents()
+    // Descendant connected callbacks render the Elix shadow root synchronously.
+    // Wait until the current custom-element reaction stack has completed.
+    queueMicrotask(() => this.#connectInputEvents())
   }
 }
 

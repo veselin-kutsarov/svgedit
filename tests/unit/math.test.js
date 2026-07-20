@@ -19,7 +19,7 @@ describe('math', function () {
     const expectedFunctions = [
       'transformPoint',
       'normalizeRotationAngle',
-      'getRotationCenterFromTransform',
+      'getRotationCenterFromRotateTransform',
       'getRotationTransformSummary',
       'getTransformList',
       'isIdentity',
@@ -51,13 +51,25 @@ describe('math', function () {
   it('recovers a rotation center from the transform matrix', function () {
     const transform = svg.createSVGTransform()
     transform.setRotate(45, 30, 40)
-    const center = math.getRotationCenterFromTransform({
+    const center = math.getRotationCenterFromRotateTransform({
+      type: SVGTransform.SVG_TRANSFORM_ROTATE,
       angle: transform.angle,
       matrix: transform.matrix
     })
 
     assert.closeTo(center.x, 30, 1e-10)
     assert.closeTo(center.y, 40, 1e-10)
+  })
+
+  it('rejects non-rotation transforms when reading a rotation center', function () {
+    const transform = svg.createSVGTransform()
+    transform.setMatrix(svg.createSVGMatrix().scale(2))
+
+    assert.throws(
+      () => math.getRotationCenterFromRotateTransform(transform),
+      TypeError,
+      'Expected an SVG rotation transform'
+    )
   })
 
   it('summarizes compound rotations from a transform list', function () {

@@ -116,4 +116,21 @@ describe('se-spin-input', () => {
     expect(changes).toEqual(['17'])
     expect(spin.value).toBe('17')
   })
+
+  it('keeps manual edit handlers when Elix replaces its internal input', async () => {
+    const spin = await createSpinInput({ value: '10', min: '0', max: '100' })
+    const input = getTextInput(spin)
+    const replacement = input.cloneNode()
+    const changes = []
+    spin.addEventListener('change', () => changes.push(spin.value))
+    input.replaceWith(replacement)
+
+    replacement.dispatchEvent(new FocusEvent('focus'))
+    replacement.value = '25'
+    replacement.dispatchEvent(new InputEvent('input', { bubbles: true }))
+    replacement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+
+    expect(changes).toEqual(['25'])
+    expect(spin.value).toBe('25')
+  })
 })

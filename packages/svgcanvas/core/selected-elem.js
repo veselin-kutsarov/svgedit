@@ -29,7 +29,7 @@ import {
   matrixMultiply,
   transformListToTransform,
   getTransformList,
-  getRotationCenterFromTransform
+  getRotationCenterFromRotateTransform
 } from './math.js'
 import { recalculateDimensions } from './recalculate.js'
 import { isGecko } from '../common/browser.js'
@@ -842,7 +842,7 @@ const clonePushedGroupTransform = xform => {
   const clone = svgCanvas.getSvgRoot().createSVGTransform()
 
   if (xform.type === SVGTransform.SVG_TRANSFORM_ROTATE) {
-    const { x, y } = getRotationCenterFromTransform(xform)
+    const { x, y } = getRotationCenterFromRotateTransform(xform)
     clone.setRotate(xform.angle, x, y)
   } else {
     clone.setMatrix(xform.matrix)

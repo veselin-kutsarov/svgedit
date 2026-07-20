@@ -89,12 +89,18 @@ export const normalizeRotationAngle = (angle) => {
 }
 
 /**
- * Gets the center encoded by a rotation transform.
- * @function getRotationCenterFromTransform
- * @param {SVGTransform} transform - The rotation transform
+ * Gets the center encoded by a typed SVG rotation transform.
+ * The transform matrix must come from `setRotate()` and therefore contain
+ * only rotation and the translation induced by its center.
+ * @function getRotationCenterFromRotateTransform
+ * @param {SVGTransform} transform - A typed SVG rotation transform
  * @returns {XYObject} The rotation center
  */
-export const getRotationCenterFromTransform = (transform) => {
+export const getRotationCenterFromRotateTransform = (transform) => {
+  if (transform.type !== SVGTransform.SVG_TRANSFORM_ROTATE) {
+    throw new TypeError('Expected an SVG rotation transform')
+  }
+
   if (Number.isFinite(transform.cx) && Number.isFinite(transform.cy)) {
     return { x: transform.cx, y: transform.cy }
   }
@@ -130,7 +136,7 @@ export const getRotationTransformSummary = (tlist) => {
       const transform = tlist.getItem(i)
       if (transform.type === SVGTransform.SVG_TRANSFORM_ROTATE) {
         rotationAngle += transform.angle
-        rotationCenter ||= getRotationCenterFromTransform(transform)
+        rotationCenter ||= getRotationCenterFromRotateTransform(transform)
       }
     }
   }
